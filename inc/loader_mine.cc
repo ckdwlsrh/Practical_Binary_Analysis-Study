@@ -171,3 +171,98 @@ cleanup:
 
     return ret;
 }
+
+static int
+load_dynsym_bfd(bfd *bfd_h, Binary *bin)
+{
+  int ret;
+  long n, nsyms, i;
+  asymbol **bfd_dynsym;
+  Symbol *sym;
+
+  bfd_dynsym = NULL;
+
+  n = bfd_get_dynamic_symtab_upper_bound(bfd_h);
+  if(n < 0) {
+    fprintf(stderr, "failed to read dynamic symtab (%s)\n", bfd_errmsg(bfd_get_error()));
+    goto fail;
+  } else if(n) {
+    bfd_dynsym = (asymbol**)malloc(n);
+    if(!bfd_dynsym) {
+      fprintf(stderr, "out of memory\n");
+      goto fail;
+    }
+    nsyms = bfd_canonicalize_dynamic_symtab(bfd_h, bfd_dynsym);
+    if(nsyms < 0) {
+      fprintf(stderr, "failed to read dynamic symtab (%s)\n", bfd_errmsg(bfd_get_error()));
+      goto fail;
+    }
+    for(i = 0; i < nsyms; i++) {
+      if(bfd_dynsym[i]->flags & BSF_FUNCTION) {
+        bin->symbols.push_back(Symbol());
+        sym = &bin->symbols.back();
+        sym->type = Symbol::SYM_TYPE_FUNC;
+        sym->name = std::string(bfd_dynsym[i]->name);
+        sym->addr = bfd_asymbol_value(bfd_dynsym[i]);
+      }
+    }
+  }
+
+  ret = 0;
+  goto cleanup;
+
+fail:
+  ret = -1;
+
+cleanup:
+  if(bfd_dynsym) free(bfd_dynsym);
+
+  return ret;
+}
+
+static int
+load_sections_bfd(bfd *bfd_h,Binary *bin)
+{
+    int bfd_flags;
+    uint64_t vma, size;
+    const char *secname;
+    asection *bfd_sec;
+    Section *sec;
+    Section::SectionType sectype;
+
+    for(bfd_sec = bfd_h->sections; bfd_sec;bfd_sec = bfd_sec->next){
+        bfd_flags = bfd_get_section_flags(bfd_h, bfd_sec);
+
+        sectype = Section::SEC_TYPE_NONE;
+        if(bfd_flags & SEC_CODE){
+            sectype = Section::SEC_TYPE_CODE;
+        } else if(bfd_flags & SEC_DATA){
+            sectype = Section::SEC_TYPE_DATA;
+        }else {
+            continue;
+        }
+        vma = bfd_section_vma(bfd_h, bfd_sec);
+        size = bfd_section_size(bfd_h, bfd_sec);
+        secname = bfd_section_name(bfd_h, bfd_sec);
+        if(!secname) secname = "<unnamed>";
+        bin->sections.push_back(Section());
+        sec = &bin->sections.back();
+
+        sec->binary = bin;
+        sec->name = std::string(secname);
+        sec->type = sectype;
+        sec->vma = vma;
+        sec->size = size;
+        sec->bytes = (uint8_t*)malloc(size);
+        if(!sec->bytes) {
+            fprintf(stderr,"out of memory\n");
+            return -1;
+        }
+
+        if(!bfd_get_section_contents(bfd_h,bfd_sec, sec->bytes,0,size)) {
+            fprintf(stderr,"failed to read section '%s' (%s)\n",secname, bfd_errmsg(bfd_get_error()));
+            return -1;
+        }
+    }
+    return 0;
+}
