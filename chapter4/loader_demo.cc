@@ -47,11 +47,17 @@ main(int argc, char *argv[])
     printf("scanned symbol tables\n");
     for(i = 0; i < bin.symbols.size(); i++) {
       sym = &bin.symbols[i];
+      std::string symtype;
+      if(sym->type & Symbol::SYM_TYPE_FUNC) symtype = "FUNC";
+      else if (sym->type & Symbol::SYM_TYPE_OBJ) symtype = "OBJECT";
+      else symtype = "";
       printf("  %-40s 0x%016jx %s\n", 
              sym->name.c_str(), sym->addr, 
-             (sym->type & Symbol::SYM_TYPE_FUNC) ? "FUNC" : "");
+             symtype.c_str());
     }
   }
+
+
   if(sec_find != NULL) {
     printf("Section : %s size : %d\n",sec_find->name.c_str(),sec_find->size);
     for(int i=1;i <= sec_find->size;i++){
