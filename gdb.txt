@@ -1,0 +1,20 @@
+warning: Currently logging to gdb.txt.  Turn the logging off and on to make the new setting effective.
+Starting program: /bin/ls 
+Warning:
+Cannot insert breakpoint 1.
+Cannot access memory at address 0x4049a0
+
+warning: Currently logging to gdb.txt.  Turn the logging off and on to make the new setting effective.
+Starting program: /bin/ls 
+Warning:
+Cannot insert breakpoint 1.
+Cannot access memory at address 0x5850
+
+warning: Currently logging to gdb.txt.  Turn the logging off and on to make the new setting effective.
+Starting program: /bin/ls 
+Warning:
+Cannot insert breakpoint 1.
+Cannot access memory at address 0x5850
+
+Error detected on fd 0
+error detected on stdin
